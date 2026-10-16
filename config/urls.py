@@ -15,8 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
+#사용자가 /todo/로 시작하는 주소에 접속하면 todo/urls.py에서 나머지 경로를 확인하라.
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('todo/', include('todo.urls')),
 ]
