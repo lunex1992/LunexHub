@@ -3,9 +3,18 @@ from django.http import HttpResponse
 
 # Create your views here.
 def index(request):
+    title = ''
+
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+
+    elif request.method == 'GET':
+        title = request.GET.get('title', '').strip()
+
     context = {
         'username': 'Lunex',
-        'todo_count': 5,
+        'todo_count': 3,
+        'submitted_title': title,
     }
 
     return render(request, 'todo/index.html', context)

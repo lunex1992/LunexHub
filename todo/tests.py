@@ -1,4 +1,5 @@
-from django.test import TestCase
+from django.test import TestCase, Client
+#Client: 실제 브라우저 없이 HTTP 요청을 흉내 내는 테스트 도구
 from django.urls import reverse
 
 # Create your tests here.
@@ -14,4 +15,32 @@ class TodoViewTests(TestCase):
     def test_index_page_content(self):
         response = self.client.get(reverse('index'))
         self.assertContains(response, 'Welcome, Lunex!')
-        self.assertContains(response, '현재 등록된 할 일: 5개')
+        self.assertContains(response, '현재 등록된 할 일: 3개')
+
+    def test_get_todo_title(self):
+        response = self.client.get(
+            reverse('index'),
+            {'title': 'Django GET 공부'}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '입력한 할 일: Django GET 공부')
+
+    def test_post_todo_title(self):
+        response = self.client.post(
+            reverse('index'),
+            {'title': 'Django POST 공부'}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '입력한 할 일: Django POST 공부')
+
+    def test_post_without_csrf_token(self):
+        client = Client(enforce_csrf_checks=True)
+
+        response = client.post(
+            reverse('index'),
+            {'title': 'CSRF Test'}
+        )
+
+        self.assertEqual(response.status_code, 403)

@@ -12,5 +12,28 @@
     <p>현재 등록된 할 일: {{ todo_count }}개</p>
 
     <p>Django Context를 이용해 Python 데이터를 표시했습니다.</p>
+<h2>Todo 입력</h2>
+
+<form action="" method="post">
+    {% csrf_token %}
+
+    <label for="todo_title">할 일:</label>
+
+    <input
+        type="text"
+        id="todo_title"
+        name="title"
+        placeholder="할 일을 입력하세요"
+        required
+    >
+
+    <button type="submit">등록</button>
+</form>
+
+{% if submitted_title %}
+    <p>입력한 할 일: {{ submitted_title }}</p>
+{% endif %} 
+
+</form>
 </body>
 </html>
