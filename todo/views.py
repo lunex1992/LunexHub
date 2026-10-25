@@ -1,21 +1,22 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.shortcuts import render, redirect
+from .models import Todo
 
-# Create your views here.
 def index(request):
-    title = ''
-
     if request.method == 'POST':
         title = request.POST.get('title', '').strip()
 
-    elif request.method == 'GET':
-        title = request.GET.get('title', '').strip()
+
+        if title:
+            Todo.objects.create(title=title)
+
+        return redirect('index')
+
+    todos = Todo.objects.all().order_by('-created_at', '-id')
 
     context = {
         'username': 'Lunex',
-        'todo_count': 3,
-        'submitted_title': title,
+        'todos': todos,
+        'todo_count': todos.count(),
     }
 
-    return render(request, 'todo/index.html', context)
-#render()는 지정한 템플릿에 데이터를 적용해 HTML을 생성하고, 그 결과를 HttpResponse 객체로 반환합니다.
+    return render(request, 'todo/index.html', context)    

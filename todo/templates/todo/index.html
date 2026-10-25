@@ -8,32 +8,42 @@
     <h1>Welcome, {{ username }}!</h1>
 
     <p>나만의 웹 애플리케이션 개발 공간입니다.</p>
-
     <p>현재 등록된 할 일: {{ todo_count }}개</p>
 
-    <p>Django Context를 이용해 Python 데이터를 표시했습니다.</p>
-<h2>Todo 입력</h2>
+    <h2>Todo 입력</h2>
 
-<form action="" method="post">
-    {% csrf_token %}
+    <form action="" method="post">
+        {% csrf_token %}
 
-    <label for="todo_title">할 일:</label>
+        <label for="todo_title">할 일:</label>
 
-    <input
-        type="text"
-        id="todo_title"
-        name="title"
-        placeholder="할 일을 입력하세요"
-        required
-    >
+        <input
+            type="text"
+            id="todo_title"
+            name="title"
+            placeholder="할 일을 입력하세요"
+            maxlength="200"
+            required
+        >
 
-    <button type="submit">등록</button>
-</form>
+        <button type="submit">등록</button>
+    </form>
 
-{% if submitted_title %}
-    <p>입력한 할 일: {{ submitted_title }}</p>
-{% endif %} 
+    <h2>Todo 목록</h2>
 
-</form>
+    <ul>
+        {% for todo in todos %}
+            <li>
+                {{ todo.title }}
+                {% if todo.is_completed %}
+                    (완료)
+                {% else %}
+                    (미완료)
+                {% endif %}
+            </li>
+        {% empty %}
+            <li>등록된 Todo가 없습니다.</li>
+        {% endfor %}
+    </ul>
 </body>
 </html>
