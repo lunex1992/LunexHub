@@ -40,6 +40,32 @@
                 {% else %}
                     (미완료)
                 {% endif %}
+                <!-- 완료 상태 변경-->
+                 <form
+                    action="{% url 'toggle_todo' todo.id %}"
+                    method="post"
+                    style="display: inline;"
+                 >
+                    {% csrf_token %}
+
+                    {% if todo.is_completed %}
+                        <button type="submit">완료 취소</button>
+                    {% else %}
+                        <button type="submit">완료</button>
+                    {% endif %}
+
+                 </form>
+                 <!-- Todo 삭제-->
+                 <form
+                    action="{% url 'delete_todo' todo.id %}"
+                    method="post"
+                    style="display: inline;"
+                 >
+                    {% csrf_token %}
+
+                    <button type="submit">삭제</button>
+
+                 </form>
             </li>
         {% empty %}
             <li>등록된 Todo가 없습니다.</li>
