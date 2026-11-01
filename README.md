@@ -428,3 +428,277 @@ git pull --ff-only origin main
 - 수정·삭제 기능 자동화 테스트 작성
 
 **향후 기술 로드맵:** Django CRUD → FullCalendar → MySQL → Docker → GCP → Kubernetes(GKE)
+
+## Day 006 — Django CRUD 완성 (Update & Delete)
+
+### 1. 학습 목표 (Learning Objectives)
+
+Day 005에서 구현한 Todo 생성(Create)과 조회(Read) 기능을 확장하여 수정(Update) 및 삭제(Delete)를 구현했다.
+
+이번 학습의 목표는 다음과 같다.
+
+- Django ORM을 이용한 데이터 수정 및 삭제
+- URL Routing과 HTTP Method의 관계 이해
+- HTML Form을 이용한 POST 요청 처리
+- CSRF 보호 및 HTTP 상태 코드 이해
+- 자동화 테스트를 통한 CRUD 기능 검증
+- GitHub Pull Request 기반 형상관리
+
+### 2. CRUD 기능 구현
+
+CRUD는 데이터베이스에서 수행하는 네 가지 기본 작업을 의미한다.
+
+| 구분 | 기능 | Django ORM |
+|---|---|---|
+| Create | Todo 생성 | `Todo.objects.create()` |
+| Read | Todo 조회 | `Todo.objects.all()` |
+| Update | Todo 수정 | `todo.save()` |
+| Delete | Todo 삭제 | `todo.delete()` |
+
+Day 006에서는 Update와 Delete 기능을 추가하여 LunexHub의 기본 CRUD를 완성했다.
+
+### 3. Todo 완료 상태 변경 (Update)
+
+**수정 파일:** `todo/views.py`
+
+```python
+@require_POST
+def toggle_todo(request, todo_id):
+    todo = get_object_or_404(Todo, pk=todo_id)
+
+    todo.is_completed = not todo.is_completed
+    todo.save(update_fields=['is_completed'])
+
+    return redirect('index')
+```
+
+**핵심 학습 내용**
+
+- `@require_POST`: POST 요청만 허용
+- `get_object_or_404()`: Todo 조회 및 존재하지 않는 객체에 대한 404 처리
+- `not`: 완료 상태를 `True`와 `False` 사이에서 전환
+- `save(update_fields=['is_completed'])`: 완료 상태 필드만 DB에 저장
+- `redirect('index')`: 작업 후 Todo 목록으로 이동
+
+완료 버튼을 누르면 미완료 상태가 완료로 변경되고, 완료 취소 버튼을 누르면 다시 미완료 상태가 된다.
+
+### 4. Todo 삭제 기능 (Delete)
+
+**수정 파일:** `todo/views.py`
+
+```python
+@require_POST
+def delete_todo(request, todo_id):
+    todo = get_object_or_404(Todo, pk=todo_id)
+
+    todo.delete()
+
+    return redirect('index')
+```
+
+**핵심 학습 내용**
+
+- `delete()`: Django ORM을 이용한 데이터 삭제
+- `get_object_or_404()`: 삭제 대상이 존재하지 않으면 HTTP 404 반환
+- `@require_POST`: GET 요청으로 삭제되지 않도록 제한
+- `redirect()`: 삭제 후 목록 페이지로 이동
+
+이번에 구현한 방식은 실제 DB 레코드를 삭제하는 Hard Delete 방식이다.
+
+향후 복구 및 감사 기록이 필요한 경우 Soft Delete 방식도 고려할 수 있다.
+
+### 5. URL Routing과 HTTP Method
+
+**수정 파일:** `todo/urls.py`
+
+```python
+urlpatterns = [
+    path('', views.index, name='index'),
+    path('<int:todo_id>/toggle/', views.toggle_todo, name='toggle_todo'),
+    path('<int:todo_id>/delete/', views.delete_todo, name='delete_todo'),
+]
+```
+
+URL Routing은 요청 경로와 View 함수를 연결한다.
+
+HTTP Method는 요청을 보내는 Client가 결정하며, URL 자체가 GET 또는 POST를 결정하는 것은 아니다.
+
+| 요청 | 처리 결과 |
+|---|---|
+| `POST /todo/5/toggle/` | Todo 상태 변경 후 302 Redirect |
+| `GET /todo/5/toggle/` | 405 Method Not Allowed |
+| `POST /todo/5/delete/` | Todo 삭제 후 302 Redirect |
+| `GET /todo/5/delete/` | 405 Method Not Allowed |
+| 존재하지 않는 Todo에 POST | 404 Not Found |
+
+데이터를 변경하는 작업은 POST로 처리하고, GET 요청은 조회 목적으로 사용하도록 설계했다.
+
+### 6. HTML Form 및 CSRF 보호
+
+**수정 파일:** `todo/templates/todo/index.html`
+
+완료 상태 변경과 삭제 기능을 HTML Form으로 연결했다.
+
+**완료 상태 변경 Form**
+
+```html
+<form action="{% url 'toggle_todo' todo.id %}" method="post">
+    {% csrf_token %}
+    <button type="submit">완료 상태 변경</button>
+</form>
+```
+
+**삭제 Form**
+
+```html
+<form action="{% url 'delete_todo' todo.id %}" method="post">
+    {% csrf_token %}
+    <button type="submit">삭제</button>
+</form>
+```
+
+**핵심 학습 내용**
+
+- `action`: HTTP 요청을 보낼 URL
+- `method="post"`: POST 방식으로 요청
+- `{% url %}`: Django URL 이름을 실제 URL로 변환
+- `{% csrf_token %}`: CSRF 공격 방어를 위한 Token 삽입
+- `<button type="submit">`: Form 제출
+
+브라우저의 개발자 도구(Network 탭)에서 POST 요청과 HTTP 302 Redirect를 직접 확인했다.
+
+### 7. Django Test Client와 ALLOWED_HOSTS
+
+Django Shell에서 테스트 Client를 사용할 때 다음 오류가 발생했다.
+
+```text
+DisallowedHost: Invalid HTTP_HOST header: 'testserver'
+```
+
+Django Test Client는 기본적으로 `testserver`라는 Host를 사용한다.
+
+현재 프로젝트 설정에서는 해당 Host가 허용되지 않아 오류가 발생했다.
+
+Shell 실습에서는 다음과 같이 해결했다.
+
+```python
+client = Client(HTTP_HOST='localhost')
+```
+
+**학습 결과**
+
+- `HTTP_HOST`: HTTP 요청에 포함된 Host 정보
+- `ALLOWED_HOSTS`: Django에서 허용하는 Host 이름 목록
+- `DisallowedHost`: 허용되지 않은 Host 요청에 대한 예외
+- `python manage.py test`: 일반적으로 테스트 환경에서 `testserver` 사용 가능
+
+`ALLOWED_HOSTS`는 네트워크 방화벽이 아니라 HTTP Host 검증을 위한 애플리케이션 보안 설정이다.
+
+### 8. 자동화 테스트 (Automated Testing)
+
+**수정 파일:** `todo/tests.py`
+
+기존 Day 005 테스트 8개에 신규 테스트 8개를 추가했다.
+
+| 구분 | 테스트 내용 |
+|---|---|
+| Update 1 | POST 요청으로 완료 상태 변경 |
+| Update 2 | 완료 상태를 다시 미완료로 변경 |
+| Update 3 | GET 요청 차단 및 DB 상태 유지 |
+| Update 4 | 존재하지 않는 Todo 수정 시 404 |
+| Delete 1 | POST 요청으로 Todo 삭제 |
+| Delete 2 | GET 요청 차단 및 DB 데이터 유지 |
+| Delete 3 | 존재하지 않는 Todo 삭제 시 404 |
+| Delete 4 | CSRF Token 없는 삭제 요청 시 403 |
+
+**테스트 실행 명령어**
+
+```bash
+python manage.py test todo -v 2
+```
+
+**실행 결과**
+
+```text
+Ran 16 tests in 0.xxxs
+
+OK
+```
+
+기존 테스트와 신규 테스트를 포함하여 총 16개가 통과했다.
+
+이러한 테스트는 새로운 기능을 추가하면서 기존 기능이 손상되지 않았는지 확인하는 Regression Test(회귀 테스트)의 기반이 된다.
+
+### 9. Git & GitHub 형상관리
+
+이번 Day 006에서는 기능 개발과 문서 작업을 브랜치로 분리했다.
+
+**기능 개발 브랜치**
+
+```text
+feature/todo-crud
+```
+
+**주요 작업**
+
+1. Django CRUD Update/Delete 기능 구현
+2. 자동화 테스트 16개 통과
+3. Git Commit 및 GitHub Push
+4. Pull Request 생성 및 코드 변경사항 검토
+5. `main` 브랜치에 Merge
+6. 로컬 `main` 동기화 및 테스트 재실행
+
+**로컬 동기화 명령어**
+
+```bash
+git switch main
+git pull --ff-only origin main
+```
+
+`--ff-only`를 이용해 불필요한 Merge Commit 생성 없이 동기화했다.
+
+### 10. 전력 ICT Technical Architect 관점
+
+이번 학습을 통해 다음과 같은 실무 개념을 익혔다.
+
+| 기술 개념 | TA 관점 |
+|---|---|
+| HTTP Method | 조회와 상태 변경 요청 분리 |
+| URL Routing | 요청 경로와 처리 기능의 연결 |
+| Django ORM | 애플리케이션과 DB 간 데이터 처리 |
+| CSRF | 웹 애플리케이션 보안 |
+| HTTP 404 / 405 | 오류 및 요청 제한 처리 |
+| Regression Test | 시스템 변경 후 기존 기능 검증 |
+| Pull Request | 코드 리뷰 및 변경 관리 |
+| Hard / Soft Delete | 데이터 보존 및 삭제 정책 |
+
+향후 실제 운영 환경에서는 사용자 인증 및 권한 관리, 감사 로그, 데이터 백업, 장애 대응, 모니터링 등을 추가로 고려해야 한다.
+
+### 11. Day 006 학습 결과
+
+**완료한 기능**
+
+- Todo 생성(Create)
+- Todo 조회(Read)
+- Todo 완료 상태 변경(Update)
+- Todo 삭제(Delete)
+- HTML Form과 Django View 연결
+- POST 및 CSRF 기반 상태 변경 처리
+- 자동화 테스트 총 16개 통과
+- GitHub PR 및 Merge 완료
+
+**핵심 성과**
+
+Django Model, View, Template, URL Routing, ORM, SQLite를 연결하여 브라우저에서 사용할 수 있는 기본 Todo CRUD 애플리케이션을 완성했다.
+
+### 12. Next Steps — Day 007 이후
+
+- Todo 제목 수정 기능
+- Todo 날짜 및 일정 관리 기능
+- FullCalendar 기반 달력 UI
+- MySQL 데이터베이스 도입
+- Docker 컨테이너 환경 구축
+- GCP 배포 및 운영
+- Kubernetes(GKE) 기반 오케스트레이션
+
+장기적으로 LunexHub를 전력 ICT Technical Architect 역량을 학습하는 실습 프로젝트로 발전시킬 예정이다.
