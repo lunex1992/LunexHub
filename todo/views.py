@@ -1,4 +1,6 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
+
 from .models import Todo
 
 def index(request):
@@ -19,4 +21,22 @@ def index(request):
         'todo_count': todos.count(),
     }
 
-    return render(request, 'todo/index.html', context)    
+    return render(request, 'todo/index.html', context)
+
+@require_POST
+def toggle_todo(request, todo_id):
+    todo = get_object_or_404(Todo, pk=todo_id)
+
+    todo.is_completed = not todo.is_completed
+    todo.save(update_fields=['is_completed'])
+
+    return redirect('index')
+
+
+@require_POST
+def delete_todo(request, todo_id):
+    todo = get_object_or_404(Todo, pk=todo_id)
+
+    todo.delete()
+
+    return redirect('index')
