@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('<int:todo_id>/toggle/', views.toggle_todo, name='toggle_todo'),
     path('<int:todo_id>/delete/', views.delete_todo, name='delete_todo'),
+    path('<int:todo_id>/edit/', views.edit_todo, name='edit_todo'),
 ]
 
 #<ind:todo_id>/toggle/ 어떤 URL에 대응하는가?
