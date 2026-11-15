@@ -702,3 +702,144 @@ Django Model, View, Template, URL Routing, ORM, SQLite를 연결하여 브라우
 - Kubernetes(GKE) 기반 오케스트레이션
 
 장기적으로 LunexHub를 전력 ICT Technical Architect 역량을 학습하는 실습 프로젝트로 발전시킬 예정이다.
+
+## Day 007 — Todo 예정일 및 제목 수정 기능 구현
+
+### 1. 개발 목표
+
+- Todo에 예정일(Scheduled Date) 기능 추가
+- 기존 Todo의 제목 수정 기능 구현
+- 기존 생성·완료·삭제 기능 유지
+- 자동화 테스트 확대 및 안정성 검증
+- GitHub Pull Request를 통한 형상관리
+
+### 2. 주요 구현 기능
+
+**① Todo 예정일 기능**
+
+- `Todo` 모델에 `scheduled_date` 필드 추가
+- 예정일을 입력하지 않아도 Todo를 생성할 수 있도록 설계
+- Django Migration을 통한 데이터베이스 구조 변경
+- HTML `date` 입력 요소를 사용하여 예정일 선택
+- `date.fromisoformat()`을 이용한 날짜 유효성 검사
+- 예정일이 있는 경우 `YYYY-MM-DD` 형식으로 표시
+- 예정일이 없는 경우 `예정일: 미지정` 표시
+
+**② Todo 제목 수정 기능**
+
+- `edit_todo` View 구현
+- 제목 수정 URL 추가
+- POST 요청을 이용한 제목 수정
+- CSRF 보호가 적용된 HTML 수정 Form 구현
+- 공백 제목 및 200자를 초과하는 제목 입력 방지
+- 제목을 수정해도 기존 예정일과 완료 상태가 유지되도록 처리
+
+### 3. 데이터베이스 변경
+
+`todo/models.py`에 다음 필드를 추가했습니다.
+
+```python
+scheduled_date = models.DateField(null=True, blank=True)
+```
+
+- `DateField`: 날짜 데이터를 저장하는 Django 모델 필드
+- `null=True`: 데이터베이스에 NULL 저장 허용
+- `blank=True`: Django의 유효성 검사에서 빈 값 허용
+
+Migration 파일:
+
+`todo/migrations/0002_todo_scheduled_date.py`
+
+기존 Todo 데이터에 예정일이 없어도 오류가 발생하지 않도록 선택형 필드로 설계했습니다.
+
+### 4. 자동화 테스트
+
+기존 16개 테스트에서 **총 30개 테스트로 확대**했습니다.
+
+| 테스트 항목 | 신규 테스트 |
+|---|---:|
+| Todo 제목 수정 | 5개 |
+| 예정일 생성 및 DB 저장 | 4개 |
+| 날짜 유효성 및 HTML 표시 | 5개 |
+| **신규 테스트 합계** | **14개** |
+
+테스트 실행 명령어:
+
+```bash
+python manage.py test todo -v 2
+```
+
+테스트 결과:
+
+```text
+Ran 30 tests in ...s
+
+OK
+```
+
+추가 검증 명령어:
+
+```bash
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test -v 2
+```
+
+전체 검증을 정상적으로 완료했습니다.
+
+### 5. 주요 학습 내용
+
+**Django 및 Python**
+
+- `DateField`를 이용한 날짜 데이터 관리
+- `null=True`와 `blank=True`의 차이
+- Migration 생성 및 적용
+- `date.fromisoformat()`을 이용한 날짜 검증
+- `@require_POST`를 이용한 HTTP 요청 제한
+- POST/Redirect/GET(PRG) 패턴
+- Django ORM을 이용한 데이터 수정 및 저장
+
+**테스트 및 품질 관리**
+
+- Django Test Client를 이용한 View 테스트
+- `refresh_from_db()`를 이용한 DB 저장 결과 확인
+- 정상 입력과 비정상 입력 테스트
+- 회귀 테스트(Regression Test)의 필요성
+- 기존 데이터와 기능의 무결성 유지
+
+**Git 및 GitHub**
+
+- Feature Branch 기반 개발
+- Git Staging 및 Commit
+- Git Push와 원격 브랜치 관리
+- Pull Request 생성 및 Merge
+- `git pull --ff-only`를 이용한 Main 브랜치 동기화
+
+### 6. Git 개발 이력
+
+1. `feature/todo-schedule` 브랜치 생성
+2. Todo 예정일 및 제목 수정 기능 구현
+3. 자동화 테스트 14개 추가
+4. Git Commit 및 GitHub Push
+5. Pull Request 생성
+6. `main` 브랜치로 Merge
+7. 로컬 Main 브랜치 동기화
+8. Main 브랜치에서 자동화 테스트 30개 재검증
+
+### 7. 향후 개발 방향
+
+- 달력 기반 Todo 일정관리 화면 구현
+- Todo 관리 기능 개선
+- MySQL 데이터베이스 연동
+- Docker 컨테이너 환경 구성
+- GCP 및 Kubernetes(GKE) 배포
+
+### 8. Day 007 회고
+
+Day 007에서는 Todo의 예정일 관리와 제목 수정 기능을 구현했습니다.
+
+이번 개발을 통해 Django 모델 변경, 데이터베이스 Migration, View와 Template 연동, 입력값 검증 및 자동화 테스트를 학습했습니다.
+
+또한 GitHub Pull Request와 Merge 과정을 직접 수행하면서 실제 개발 프로젝트에서 사용하는 형상관리 흐름을 경험했습니다.
+
+**최종 결과: 자동화 테스트 30개 통과 및
