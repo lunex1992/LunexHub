@@ -26,6 +26,16 @@
             required
         >
 
+        <label for="scheduled_date">
+            예정 날짜:
+        </label>
+
+        <input
+            type="date"
+            id="scheduled_date"
+            name="scheduled_date"
+        >        
+
         <button type="submit">등록</button>
     </form>
 
@@ -35,17 +45,43 @@
         {% for todo in todos %}
             <li>
                 {{ todo.title }}
+
                 {% if todo.is_completed %}
                     (완료)
                 {% else %}
                     (미완료)
                 {% endif %}
-                <!-- 완료 상태 변경-->
-                 <form
-                    action="{% url 'toggle_todo' todo.id %}"
+
+                <!-- STEP 005-3: 예정 날짜 표시 -->
+                <div>
+                    {% if todo.scheduled_date %}
+                        예정일: {{ todo.scheduled_date|date:"Y-m-d" }}
+                    {% else %}
+                        예정일: 미지정
+                    {% endif %}
+                </div>
+                <!-- 제목 수정 -->
+                <form action="{% url 'edit_todo' todo.id %}"
                     method="post"
-                    style="display: inline;"
-                 >
+                    style="display: inline;">
+                    {% csrf_token %}
+
+                    <input
+                        type="text"
+                        name="title"
+                        value="{{ todo.title }}"
+                        maxlength="200"
+                        required
+                        aria-label="Todo 제목 수정"
+                    >
+
+                    <button type="submit">수정</button>
+                </form>
+
+                <!-- 완료 상태 변경 -->
+                <form action="{% url 'toggle_todo' todo.id %}"
+                    method="post"
+                    style="display: inline;">
                     {% csrf_token %}
 
                     {% if todo.is_completed %}
@@ -53,19 +89,15 @@
                     {% else %}
                         <button type="submit">완료</button>
                     {% endif %}
+                </form>
 
-                 </form>
-                 <!-- Todo 삭제-->
-                 <form
-                    action="{% url 'delete_todo' todo.id %}"
+                <!-- Todo 삭제 -->
+                <form action="{% url 'delete_todo' todo.id %}"
                     method="post"
-                    style="display: inline;"
-                 >
+                    style="display: inline;">
                     {% csrf_token %}
-
                     <button type="submit">삭제</button>
-
-                 </form>
+                </form>
             </li>
         {% empty %}
             <li>등록된 Todo가 없습니다.</li>
